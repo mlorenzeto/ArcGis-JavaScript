@@ -1,0 +1,69 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ArcGIS JavaScript Tutorials: Create a Starter App (3D)</title>
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+  
+  <link rel="stylesheet" href="https://js.arcgis.com/4.13/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.13/"></script>
+  
+  <script>  
+    require([
+        "esri/Map", 
+        "esri/views/SceneView",
+        "esri/widgets/BasemapToggle",
+        "esri/widgets/BasemapGallery"
+    ], function(Map, SceneView, BasemapToggle, BasemapGallery) {
+
+      var map = new Map({
+        basemap: "streets-navigation-vector",
+        ground: "world-elevation" //show elevation
+      });
+
+      var view = new SceneView({
+        container: "viewDiv",
+        map: map,
+        camera: {
+          position: { // observation point
+            x: -118.80543,
+            y: 34.02700,
+            z: 2000 // altitude in meters
+          },
+          tilt: 65 // perspective in degrees
+        }
+      });
+
+      var basemapToggle = new BasemapToggle({
+        view: view,
+        nextBasemap: "satellite"
+      });
+
+      view.ui.add(basemapToggle, "bottom-right");
+
+      var basemapGallery = new BasemapGallery({
+        view: view,
+        source: {
+          portal: {
+            url: "https://www.arcgis.com",
+            useVectorBasemaps: true
+          }
+        }
+      });
+
+      view.ui.add(basemapGallery, "top-right");
+            
+    });
+  </script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+</body>
+</html>
