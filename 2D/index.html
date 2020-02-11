@@ -87,7 +87,10 @@
 
       // Parks and open spaces (polygons)
       var parksLayer = new FeatureLayer({
-        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0"
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0",
+        popupTemplate: { // Enable a popup
+          title: "{PARK_NAME}", // Show attribute value,          
+        }
       });
       map.add(parksLayer, 0);
 

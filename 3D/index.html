@@ -20,8 +20,9 @@
         "esri/Map", 
         "esri/views/SceneView",
         "esri/widgets/BasemapToggle",
-        "esri/widgets/BasemapGallery"
-    ], function(Map, SceneView, BasemapToggle, BasemapGallery) {
+        "esri/widgets/BasemapGallery",
+        "esri/layers/FeatureLayer"
+    ], function(Map, SceneView, BasemapToggle, BasemapGallery, FeatureLayer) {
 
       var map = new Map({
         basemap: "streets-navigation-vector",
@@ -59,6 +60,43 @@
       });
 
       view.ui.add(basemapGallery, "top-right");
+
+      // Trailheads feature layer (points)
+      var trailheadsLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
+        popupTemplate: { // Enable a popup
+          title: "{TRL_NAME}", // Show attribute value,
+          content: "The trailhead elevation is {ELEV_FT} ft." // Display text in pop-up
+        }        
+      });
+      map.add(trailheadsLayer);
+
+      // Trails feature layer (lines)
+      var trailsLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0",
+        definitionExpression: "ELEV_GAIN < 250",
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-line",
+            color: "purple",
+            width: "5px"
+          }
+        },
+        outFields: ["TRL_NAME", "ELEV_GAIN"],
+        popupTemplate: { // Enable a popup
+          title: "{TRL_NAME}", // Show attribute value,
+          content: "The trail elevation gain is {ELEV_GAIN} ft." // Display text in pop-up
+        }
+      });
+      
+      map.add(trailsLayer, 0);
+
+      // Parks and open spaces (polygons)
+      var parksLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0"
+      });
+      map.add(parksLayer, 0);
             
     });
   </script>
