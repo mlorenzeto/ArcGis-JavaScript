@@ -1,9 +1,9 @@
 <html>
-
 <head>
+  <meta name="description" content="ArcGIS JavaScript Tutorials: Query a feature layer">
   <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>ArcGIS JavaScript Tutorials: Create a Starter App</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>ArcGIS JavaScript Tutorials: Query a feature layer</title>
   <style>
     html,
     body,
@@ -14,63 +14,94 @@
       width: 100%;
     }
   </style>
-
   <link rel="stylesheet" href="https://js.arcgis.com/4.13/esri/css/main.css">
   <script src="https://js.arcgis.com/4.13/"></script>
+</head>
 
-  <script>
-    require([
+<script>
+  require([
       "esri/Map",
       "esri/views/MapView",
       "esri/layers/FeatureLayer",
       "esri/layers/GraphicsLayer",
       "esri/Graphic"
-    ], function (Map, MapView, FeatureLayer, GraphicsLayer, Graphic) {
+    ],
+    function(
+      Map, MapView, FeatureLayer, GraphicsLayer, Graphic
+    ) {
 
       var map = new Map({
         basemap: "topo-vector"
       });
-
+    
       var view = new MapView({
         container: "viewDiv",
         map: map,
-        center: [-118.80500, 34.02700],
+        center: [-118.80543,34.02700],
         zoom: 13
       });
+      
+      //*** CHALLENGE ***//
+      var sql = "TRL_NAME like '%Canyon%'";
 
-      // Reference the feature Layer to query
+      view.when(function(){
+        //*** ADD ***//
+        // queryFeatureLayer(view.center, 1500, "intersects")
+        queryFeatureLayerView(view.center, 1500, "intersects")
+        
+        //*** CHALLENGE ***//
+        //queryFeatureLayer(view.center, 1500, "intersects", sql)
+        //queryFeatureLayerView(view.center, 1500, "intersects", sql)
+      });
+
+      view.on("click", function(event){
+        //*** ADD ***//
+        queryFeatureLayer(event.mapPoint, 1500, "intersects")
+        //queryFeatureLayerView(event.mapPoint, 1500, "intersects");
+        
+        //*** CHALLENGE ***//
+        // queryFeatureLayer(event.mapPoint, 1500, "intersects", sql)
+        queryFeatureLayerView(event.mapPoint, 1500, "intersects", sql)
+      });
+
+    
+      // Reference the feature layer to query
+ 
       var featureLayer = new FeatureLayer({
         url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads_Styled/FeatureServer/0",
       });
-
-      // Layer used to draw graphics returned
+    
+     // Add a graphics layer to hold features and draw data
+    
       var graphicsLayer = new GraphicsLayer();
       map.add(graphicsLayer);
-
+    
       function addGraphics(result) {
         graphicsLayer.removeAll();
-        result.features.forEach(function (feature) {
+        result.features.forEach(function(feature){
           var g = new Graphic({
             geometry: feature.geometry,
             attributes: feature.attributes,
             symbol: {
-              type: "simple-marker",
-              color: [0, 0, 0],
+             type: "simple-marker",
+              color: [0,0,0],
               outline: {
-                width: 2,
-                color: [0, 255, 255],
-              },
+               width: 2,
+               color: [0,255,255],
+             },
               size: "20px"
             },
             popupTemplate: {
-              title: "{TRL_NAME}",
-              content: "This a {PARK_NAME} trail located in {CITY_JUR}."
+             title: "{TRL_NAME}",
+             content: "This a {PARK_NAME} trail located in {CITY_JUR}."
             }
           });
           graphicsLayer.add(g);
         });
       }
-
+    
+      // Server-side query
+    
       function queryFeatureLayer(point, distance, spatialRelationship, sqlExpression) {
         var query = {
           geometry: point,
@@ -80,19 +111,18 @@
           returnGeometry: true,
           where: sqlExpression
         };
-        featureLayer.queryFeatures(query).then(function (result) {
-          addGraphics(result, true);
+        featureLayer.queryFeatures(query).then(function(result) {
+          addGraphics(result);
         });
-      }
-
-      function queryFeatureLayerView(point, distance, spatialRelationship, sqlExpression) {
-        // Add the layer if it is missing
+      }  
+        
+      // Client-side query
+    
+      function queryFeatureLayerView(point, distance, spatialRelationship, sqlExpression){ 
         if (!map.findLayerById(featureLayer.id)) {
           featureLayer.outFields = ["*"];
-          map.add(featureLayer, 0);
+          map.add(featureLayer,0);
         }
-
-        // Set up the query
         var query = {
           geometry: point,
           distance: distance,
@@ -101,40 +131,52 @@
           returnGeometry: true,
           where: sqlExpression
         };
-
-        // Wait for the layerView to be ready and then query features
-        view.whenLayerView(featureLayer).then(function (featureLayerView) {
+        // Wait for the layerview to be ready and then query features
+        view.whenLayerView(featureLayer).then(function(featureLayerView) {
           if (featureLayerView.updating) {
-            var handle = featureLayerView.watch("updating", function (isUpdating) {
+            var handle = featureLayerView.watch("updating", function(isUpdating){
               if (!isUpdating) {
-                // Execute the query
-                featureLayerView.queryFeatures(query).then(function (result) {
-                  addGraphics(result);
+                featureLayerView.queryFeatures(query).then(function(result) {
+                  addGraphics(result) 
                 });
                 handle.remove();
               }
-            });
+            });            
           } else {
-            // Execute the query
-            featureLayerView.queryFeatures(query).then(function (result) {
+            featureLayerView.queryFeatures(query).then(function(result) {
               addGraphics(result);
             });
           }
         });
-
-        view.when(function () {
-          // queryFeatureLayer(view.center, 1500, "intersects");
-          queryFeatureLayerView(view.center, 1500, "intersects");
+      } 
+    
+      // CHALLENGE: Find a feature and show pop-ups (client-side)
+    
+      view.when(function() {
+        view.whenLayerView(featureLayer).then(function(featureLayerView) {
+          view.on("pointer-move", function(event) {
+            view.hitTest(event).then(function(response) {
+              // Only return features for the feature layer
+              var feature = response.results.filter(function (result) {
+                return result.graphic.layer === featureLayer;
+              })[0].graphic;
+              if (feature) {
+                // Show popup for new features only
+                if (!view.popup.features.length || view.popup.features.length && (view.popup.features[0].attribures.FID !== feature.attributes.FID)) {
+                  view.popup.open({
+                    title: feature.attributes.TRL_NAME,
+                    content: `This a ${feature.attributes.PARK_NAME} trail located in ${feature.attributes.CITY_JUR}.`,
+                    location: feature.geometry
+                  });
+                }
+              }
+            });
+          });
         });
-
-        view.on("click", function (event) {
-          // queryFeatureLayer(event.mapPoint, 1500, "intersects");
-          queryFeatureLayerView(event.mapPoint, 1500, "intersects");
-        });
-
-      }
+      });
 
     });
+    
   </script>
 </head>
 

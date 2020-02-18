@@ -1,0 +1,118 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ArcGIS JavaScript Tutorials: Create a Starter App</title>
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+  
+  <link rel="stylesheet" href="https://js.arcgis.com/4.13/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.13/"></script>
+  
+  <script>  
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer"
+    ], function(Map, MapView, FeatureLayer) {
+
+      var map = new Map({
+        basemap: "topo-vector"
+      });
+
+      var view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-118.80500,34.02700],
+        zoom: 13
+      });
+
+      var featureLayer = new FeatureLayer({
+        url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails_Styled/FeatureServer/0",
+        outFields: ["*"], // Return all fields so it can be queried client-side
+        popupTemplate: { // Enable a poput
+          title: "{TRL_NAME}", // Show attribute value
+          content: "The trail elevation gain is {ELEV_GAIN} ft." // Display in pop-up
+        }
+      });
+
+      map.add(featureLayer);
+
+      var sqlExpressions = ["TRL_ID = 0", "TRL_ID > 0", "USE_BIKE = 'Yes'", "USE_BIKE = 'No'", "ELEV_GAIN < 1000", "ELEV_GAIN > 1000", "TRL_NAME = 'California Coastal Trail'"];
+
+      var selectFilter = document.createElement("select");
+      selectFilter.setAttribute("class", "esri-widget esri-select");
+      selectFilter.setAttribute("style", "width: 275px; font-family: Avenir Next W00; font-size: 1em;");
+
+      sqlExpressions.forEach(function(sql){
+        var option = document.createElement("option");
+        option.value = sql;
+        option.innerHTML = sql;
+        selectFilter.appendChild(option);
+      });
+
+      view.ui.add(selectFilter, "top-right");
+
+      // Server-side filter
+      function setFeatureLayerFilter(expression) {
+        featureLayer.definitionExpression = expression;
+      }
+      
+      // Client-side filter
+      function setFeatureLayerViewFilter(expression) {
+        view.whenLayerView(featureLayer).then(function(featureLayerView) {
+          // featureLayerView.filter = {
+          //   where: expression
+          // };
+
+          /* CHALLENGE */
+          featureLayerView.effect = {
+            filter: {
+              where: expression
+            },
+            excludedEffect: "opacity(50%)"
+          }
+        });
+      }
+
+      selectFilter.addEventListener('change', function (event) {
+        // Server side
+        // setFeatureLayerFilter(event.target.value);
+
+        // Client side
+        setFeatureLayerViewFilter(event.target.value);
+      });
+
+      /* CHALLENGE */
+
+      var highlight;
+
+      view.whenLayerView(featureLayer).then(function(featureLayerView) {
+        view.on("pointer-move", function(event) {
+          view.hitTest(event).then(function(response) {
+            // Only return features for the feature layer
+            var feature = response.results.filter(function (result) {
+              return result.graphic.layer === featureLayer;
+            })[0].graphic;
+            if (highlight) {
+              highlight.remove();
+            }
+            // Highlight feature
+            highlight = featureLayerView.highlight(feature);
+          });
+        });
+      });
+
+    });
+  </script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+</body>
+</html>
